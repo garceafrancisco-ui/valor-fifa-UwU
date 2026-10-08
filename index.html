@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Valor - FIFA 23 Modo Carrera</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --panel:#111a2e;
+    --panel2:#16223a;
+    --accent:#00e0a0;
+    --accent2:#00b3ff;
+    --gold:#ffce4d;
+    --text:#e8eefc;
+    --muted:#8fa1c0;
+    --danger:#ff5d73;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%, #1a2b4d 0%, var(--bg) 55%);
+    color:var(--text);
+    min-height:100vh;
+    padding:24px 16px 60px;
+  }
+  header{
+    max-width:1100px;margin:0 auto 24px;text-align:center;
+  }
+  header h1{
+    font-size:clamp(1.4rem,3vw,2.2rem);
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    letter-spacing:.5px;
+  }
+  header p{color:var(--muted);margin-top:6px;font-size:.95rem}
+  .layout{
+    max-width:1100px;margin:0 auto;
+    display:grid;grid-template-columns:1.1fr .9fr;gap:20px;
+  }
+  @media(max-width:860px){.layout{grid-template-columns:1fr}}
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid rgba(255,255,255,.06);
+    border-radius:var(--radius);
+    padding:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  .card h2{
+    font-size:1.05rem;text-transform:uppercase;letter-spacing:1.5px;
+    color:var(--accent);margin-bottom:16px;display:flex;align-items:center;gap:8px;
+  }
+  .grid-inputs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1/-1}
+  label{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  input[type=number],select{
+    background:#0d1626;border:1px solid rgba(255,255,255,.1);
+    color:var(--text);padding:10px 12px;border-radius:8px;font-size:1rem;width:100%;
+    transition:border .2s, box-shadow .2s;
+  }
+  input:focus,select:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(0,179,255,.15)}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .range-row{display:flex;align-items:center;gap:10px}
+  .range-val{min-width:44px;text-align:center;font-weight:700;color:var(--gold);background:#0d1626;border-radius:8px;padding:4px 8px;font-size:.95rem}
+  small.hint{color:var(--muted);font-size:.72rem}
+  .btn{
+    margin-top:18px;width:100%;padding:14px;border:none;border-radius:10px;
+    font-size:1.05rem;font-weight:800;letter-spacing:1px;cursor:pointer;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));color:#04121f;
+    transition:transform .15s, filter .2s;
+  }
+  .btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+  .btn.secondary{background:#223250;color:var(--text);font-weight:600;margin-top:10px;padding:10px;font-size:.9rem}
+  /* Result card */
+  .value-big{
+    text-align:center;font-size:clamp(2rem,5vw,3rem);font-weight:900;
+    color:var(--gold);text-shadow:0 0 25px rgba(255,206,77,.35);
+    margin:6px 0 2px;
+  }
+  .value-sub{text-align:center;color:var(--muted);font-size:.85rem;margin-bottom:18px}
+  .breakdown{display:flex;flex-direction:column;gap:9px}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 84px;align-items:center;gap:10px;font-size:.82rem}
+  .bar-label{color:var(--muted)}
+  .bar-track{background:#0d1626;border-radius:6px;height:14px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s ease}
+  .bar-amt{text-align:right;font-variant-numeric:tabular-nums;color:var(--text)}
+  .multipliers{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    background:#0d1626;border:1px solid rgba(255,255,255,.08);
+    padding:6px 10px;border-radius:999px;font-size:.75rem;color:var(--muted)
+  }
+  .chip b{color:var(--accent2)}
+  .verdict{
+    margin-top:18px;padding:14px;border-radius:10px;font-size:.9rem;line-height:1.45;
+    background:rgba(0,224,160,.08);border:1px solid rgba(0,224,160,.25);
+  }
+  .verdict.warn{background:rgba(255,93,115,.08);border-color:rgba(255,93,115,.3)}
+  .tags{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+  .tag{font-size:.75rem;font-weight:700;padding:5px 10px;border-radius:6px;letter-spacing:.5px}
+  .tag.gold{background:rgba(255,206,77,.15);color:var(--gold);border:1px solid rgba(255,206,77,.4)}
+  .tag.blue{background:rgba(0,179,255,.12);color:var(--accent2);border:1px solid rgba(0,179,255,.35)}
+  .tag.green{background:rgba(0,224,160,.12);color:var(--accent);border:1px solid rgba(0,224,160,.35)}
+  footer{max-width:1100px;margin:26px auto 0;color:var(--muted);font-size:.75rem;text-align:center;line-height:1.6}
+  .slider-group{display:flex;flex-direction:column;gap:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚽ Calculadora de Valor de Jugadores — FIFA 23 Modo Carrera</h1>
+  <p>Modelo predictivo basado en OVR, POT, Edad, Contrato, Posición, Forma, Moral y Tiempo de Juego (Potencial Dinámico)</p>
+</header>
+
+<div class="layout">
+
+  <!-- ============ INPUTS ============ -->
+  <section class="card">
+    <h2>📋 Datos del Jugador</h2>
+    <div class="grid-inputs">
+
+      <div class="field">
+        <label for="nombre">Nombre (opcional)</label>
+        <input type="text" id="nombre" placeholder="Ej: J. Ramírez" style="background:#0d1626;border:1px solid rgba(255,255,255,.1);color:var(--text);padding:10px 12px;border-radius:8px;font-size:1rem;width:100%">
+      </div>
+
+      <div class="field">
+        <label for="posicion">Posición</label>
+        <select id="posicion">
+          <option value="delantero">Delantero (ST / CF)</option>
+          <option value="extremo">Extremo (LW / RW)</option>
+          <option value="mediocentroof">Mediocentro Ofensivo (CAM / CM)</option>
+          <option value="mediocentrodef">Mediocentro Defensivo (CDM)</option>
+          <option value="lateral">Lateral (LB / RB)</option>
+          <option value="central">Central (CB)</option>
+          <option value="portero">Portero (GK)</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label>OVR — Calificación Global <span class="hint">(rendimiento actual)</span></label>
+        <div class="range-row">
+          <input type="range" id="ovr" min="40" max="99" value="75">
+          <span class="range-val" id="ovrVal">75</span>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>POT — Potencial <span class="hint">(techo máximo de desarrollo)</span></label>
+        <div class="range-row">
+          <input type="range" id="pot" min="40" max="99" value="80">
+          <span class="range-val" id="potVal">80</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Edad</label>
+        <div class="range-row">
+          <input type="range" id="edad" min="16" max="40" value="23">
+          <span class="range-val" id="edadVal">23</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Años de contrato restantes</label>
+        <div class="range-row">
+          <input type="range" id="contrato" min="0" max="5" step="1" value="3">
+          <span class="range-val" id="contratoVal">3</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Liga</label>
+        <select id="liga">
+          <option value="elite">Élite (Premier, LaLiga, Serie A...)</option>
+          <option value="fuerte">Fuerte (Bundesliga, Ligue 1, Eredivisie...)</option>
+          <option value="media">Media (Resto de Europa)</option>
+          <option value="debil">Emergente (Sudamérica, otras)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nacionalidad</label>
+        <select id="nacionalidad">
+          <option value="alta">Alta demanda (FR, BR, AR, ES, BE...)</option>
+          <option value="media">Demanda media</option>
+          <option value="baja">Demanda baja</option>
+        </select>
+      </div>
+
+      <div class="field full slider-group">
+        <label>Forma <span class="hint">(rendimiento reciente en partidos)</span></label>
+        <div class="range-row">
+          <input type="range" id="forma" min="1" max="10" value="5">
+          <span class="range-val" id="formaVal">5</span>
+        </div>
+      </div>
+
+      <div class="field full slider-group">
+        <label>Moral <span class="hint">(feliz ↔ infeliz)</span></label>
+        <div class="range-row">
+          <input type="range" id="moral" min="1" max="10" value="5">
+          <span class="range-val" id="moralVal">5</span>
+        </div>
+      </div>
+
+      <div class="field full slider-group">
+        <label>Tiempo de juego <span class="hint">(titular ↔ suplente — clave para el Potencial Dinámico)</span></label>
+        <div class="range-row">
+          <input type="range" id="minutos" min="1" max="10" value="5">
+          <span class="range-val" id="minutosVal">5</span>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label><input type="checkbox" id="cantera" style="width:auto;margin-right:6px;accent-color:var(--accent)"> Jugador gestionado por el usuario (cantera / DP activo)</label>
+        <small class="hint">Activa el efecto del Potencial Dinámico según tiempo de juego, forma y moral.</small>
+      </div>
+
+    </div>
+
+    <button class="btn" id="calcular">CALCULAR VALOR DE MERCADO</button>
+    <button class="btn secondary" id="reset">Restablecer valores</button>
+  </section>
+
+  <!-- ============ RESULTADOS ============ -->
+  <section class="card">
+    <h2>💰 Valor Estimado</h2>
+    <div class="value-big" id="resultado">— €</div>
+    <div class="value-sub" id="resultadoSub">Completa los datos y pulsa calcular</div>
+
+    <div class="breakdown" id="breakdown"></div>
+
+    <div class="multipliers" id="multipliers"></div>
+
+    <div class="tags" id="tags"></div>
+
+    <div class="verdict" id="verdict" hidden></div>
+  </section>
+
+</div>
+
+<footer>
+  Modelo inspirado en la regresión lineal descrita en la guía (R² ≈ 93.8%): contribuciones base por OVR (×0.717M€), POT (×0.375M€),<br>
+  edad transformada respecto a los 25 años (×0.848M€), contrato (×0.043M€/año) y posición (atacantes con mayor ponderación),<br>
+  ajustadas por multiplicadores contextuales de forma, moral, liga, nacionalidad y Potencial Dinámico. Estimación orientativa, no oficial de EA Sports.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- Sliders que muestran su valor en vivo ----
+  const sliders = ["ovr","pot","edad","contrato","forma","moral","minutos"];
+  sliders.forEach(id=>{
+    const el = document.getElementById(id);
+    const lab = document.getElementById(id+"Val");
+    el.addEventListener("input",()=>lab.textContent = el.value);
+  });
+
+  // ---- Coeficientes del modelo (millones de €) ----
+  const COEF = { ovr:0.717, pot:0.375, age:0.848, contract:0.043 };
+
+  // Ponderación por posición (coef. atacante = 0.071 como referencia)
+  const POS = {
+    delantero:       {mult:1.20, label:"Delantero"},
+    extremo:         {mult:1.15, label:"Extremo"},
+    mediocentroof:   {mult:1.10, label:"Mediocentro ofensivo"},
+    mediocentrodef:  {mult:0.95, label:"Mediocentro defensivo"},
+    lateral:         {mult:0.92, label:"Lateral"},
+    central:         {mult:0.88, label:"Central"},
+    portero:         {mult:0.70, label:"Portero"}
+  };
+
+  const LIGA = { elite:1.15, fuerte:1.05, media:0.95, debil:0.85 };
+  const NAC  = { alta:1.08, media:1.00, baja:0.92 };
+
+  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+  // Curva de edad: pico a los 25, penaliza juventud extrema y vejez.
+  // transformed_age = distancia desde 25 -> bonus/penalty en M€ (coef 0.848).
+  function ageFactor(edad, ovr, pot){
+    const dist = 25 - edad;                       // + = joven, - = veterano
+    let raw = dist * COEF.age;                    // millones
+    // Los jóvenes solo cobran bonus si tienen margen real de mejora (POT > OVR)
+    if(dist > 0){
+      const margen = clamp((pot - ovr)/15, 0, 1); // 0..1
+      raw *= 0.35 + 0.65*margen;
+      raw = clamp(raw, 0, 12);
+    } else {
+      raw = clamp(raw, -22, 0);                   // castigo máximo a veteranos
+      if(edad >= 35) raw -= 6;                    // caída extra final de carrera
+    }
+    return raw;
+  }
+
+  // Potencial Dinámico: solo para jugadores gestionados (cantera).
+  // Ciclo virtuoso: minutos + forma + moral aceleran el techo percibido.
+  function dynamicPotential(pot, edad, minutos, forma, moral, cantera){
+    if(!cantera || edad > 28) return {bonusPts:0, active:false};
+    const drive = (minutos*0.45 + forma*0.30 + moral*0.25) / 10; // 0.1..1
+    const headroom = Math.max(0, pot - 60) * 0.12;               // techo de bonus en puntos
+    const bonusPts = Math.round(headroom * drive * (1 - clamp((edad-16)/14,0,0.7)));
+    return {bonusPts, active:true};
+  }
+
+  function fmt(n){
+    if(n >= 1000) return (n/1000).toFixed(2).replace(/\.?0+$/,"") + " B€";
+    if(n >= 1)    return n.toFixed(1).replace(/\.0$/,"") + " M€";
+    return Math.round(n*1000) + " K€";
+  }
+
+  function calculate(){
+    const g = id=>document.getElementById(id);
+    const ovr = +g("ovr").value, potBase = +g("pot").value, edad = +g("edad").value;
+    const contrato = +g("contrato").value, pos = g("posicion").value;
+    const liga = g("liga").value, nac = g("nacionalidad").value;
+    const forma = +g("forma").value, moral = +g("moral").value, minutos = +g("minutos").value;
+    const cantera = g("cantera").checked;
+    const nombre = g("nombre").value.trim();
+
+    // --- Potencial Dinámico ajusta el POT efectivo ---
+    const dp = dynamicPotential(potBase, edad, minutos, forma, moral, cantera);
+    const pot = clamp(potBase + dp.bonusPts, potBase, 99);
+
+    // --- Contribuciones base (M€) ---
+    const cOvr = ovr * COEF.ovr;                              // ej: 85 -> 61.0 M€
+    const cPot = Math.max(0,(pot - ovr)) * COEF.pot * 2.2     // premio al margen de mejora
+               + pot * COEF.pot * 0.35;                        // peso base del POT
+    const cAge = ageFactor(edad, ovr, pot);
+    const cCon = contrato * COEF.contract * (1 + ovr/100);    // contrato prima ligada a calidad
+    const cPos = ovr * 0.071 * (POS[pos].mult - 1) * 4;       // diferencial posicional
+
+    const base = Math.max(0.05, cOvr + cPot + cAge + cCon + cPos);
+
+    // --- Multiplicadores contextuales ---
+    const mForma = 0.85 + (forma-1)*0.035;    // 1->0.85 | 10->1.165
+    const mMoral = 0.80 + (moral-1)*0.045;    // 1->0.80 | 10->1.405 (jugador infeliz = chollo/barato)
+    const mLiga  = LIGA[liga];
+    const mNac   = NAC[nac];
+    const mPos   = 0.85 + POS[pos].mult*0.15; // mezcla suave de la ponderación posicional
+
+    const totalM = base * mForma * mMoral * mLiga * mNac * mPos;
+
+    // --- Render resultado ---
+    g("resultado").textContent = fmt(totalM);
+    g("resultadoSub").textContent =
+      (nombre ? nombre + " · " : "") + POS[pos].label + " · OVR " + ovr + " / POT " + pot + " · " + edad + " años";
+
+    // Desglose de barras
+    const rows = [
+      {l:"OVR (×0.717)", v:cOvr},
+      {l:"POT (×0.375)", v:cPot},
+      {l:"Edad (transf.)", v:cAge},
+      {l:"Contrato", v:cCon},
+      {l:"Posición", v:cPos}
+    ];
+    const maxAbs = Math.max(...rows.map(r=>Math.abs(r.v)), 1);
+    g("breakdown").innerHTML = rows.map(r=>{
+      const w = clamp(Math.abs(r.v)/maxAbs*100,2,100);
+      const neg = r.v < 0;
+      return `<div class="bar-row">
+        <span class="bar-label">${r.l}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${w}%;${neg?'background:linear-gradient(90deg,#ff5d73,#ff8a5d)':''}"></div></div>
+        <span class="bar-amt">${neg?'−':'+'}${fmt(Math.abs(r.v))}</span>
+      </div>`;
+    }).join("");
+
+    // Chips de multiplicadores
+    const chip = (t,v)=>`<span class="chip">${t}: <b>${v.toFixed(2)}×</b></span>`;
+    g("multipliers").innerHTML =
+      chip("Forma",mForma) + chip("Moral",mMoral) + chip("Liga",mLiga) + chip("Nacionalidad",mNac) + chip("Posición",mPos) +
+      (dp.active ? `<span class="chip">DP: <b>+${dp.bonusPts} POT</b></span>` : "");
+
+    // Etiquetas tipo FIFA (menores de 21 con OVR ≥ 60)
+    const tags = [];
+    if(edad < 21 && ovr >= 60){
+      if(pot >= 90) tags.push(["gold","Tiene potencial para ser especial"]);
+      else if(pot >= 83) tags.push(["blue","Prospecto emocionante"]);
+      else tags.push(["green","Buen potencial"]);
+    }
+    if(margenJuventud(edad,pot)) tags.push(["blue","Inversión a largo plazo"]);
+    if(edad >= 31) tags.push(["green","Veterano — valor en declive"]);
+    if(moral <= 2) tags.push(["gold","⚠ Jugador infeliz (regateable)"]);
+    g("tags").innerHTML = tags.map(t=>`<span class="tag ${t[0]}">${t[1]}</span>`).join("");
+
+    // Veredicto estratégico
+    const v = g("verdict");
+    v.hidden = false;
+    let msg;
+    const margen = pot - ovr;
+    if(edad <= 23 && margen >= 10 && totalM > 15){
+      msg = `🎯 <b>Joyas de inversión.</b> Perfil de alto retorno: Youth + ${(margen)} pts de margen POT-OVR. Asegura minutos de titular o usa el bucle de préstamo para activar el Potencial Dinámico y vender tras el salto de OVR.`;
+      v.className = "verdict";
+    } else if(moral <= 2 || contrato <= 1){
+      msg = `📉 <b>Oportunidad de compra.</b> Su valor está deprimido por contexto (moral/contrato), no por calidad. Compra barato y renegocia o revende cuando recupere forma.`;
+      v.className = "verdict warn";
+    } else if(edad >= 30){
+      msg = `⏳ <b>Valor en declive.</b> Tras los 25-30 el multiplicador de edad penaliza cada temporada. Si buscas plusvalía, véndelo antes de que baje más; si es refuerzo, contrato corto.`;
+      v.className = "verdict warn";
+    } else {
+      msg = `✅ <b>Valor estable.</b> Cotización coherente con sus métricas. Compara con jugadores del mismo nicho (posición + OVR + edad) para detectar infravaloraciones de ±20%.`;
+      v.className = "verdict";
+    }
+    v.innerHTML = msg;
+  }
+
+  function margenJuventud(edad,pot){ return edad <= 24 && pot >= 84; }
+
+  document.getElementById("calcular").addEventListener("click", calculate);
+
+  document.getElementById("reset").addEventListener("click", ()=>{
+    const defs = {ovr:75,pot:80,edad:23,contrato:3,forma:5,moral:5,minutos:5};
+    for(const id in defs){
+      const el = document.getElementById(id);
+      el.value = defs[id];
+      document.getElementById(id+"Val").textContent = defs[id];
+    }
+    document.getElementById("posicion").value="delantero";
+    document.getElementById("liga").value="elite";
+    document.getElementById("nacionalidad").value="alta";
+    document.getElementById("cantera").checked=false;
+    document.getElementById("nombre").value="";
+    document.getElementById("resultado").textContent="— €";
+    document.getElementById("resultadoSub").textContent="Completa los datos y pulsa calcular";
+    document.getElementById("breakdown").innerHTML="";
+    document.getElementById("multipliers").innerHTML="";
+    document.getElementById("tags").innerHTML="";
+    document.getElementById("verdict").hidden=true;
+  });
+
+  // Calcular automáticamente al cambiar cualquier input
+  document.querySelectorAll("input,select").forEach(el=>{
+    el.addEventListener("change", calculate);
+  });
+})();
+</script>
+</body>
+</html>
